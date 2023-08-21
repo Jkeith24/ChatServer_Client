@@ -141,7 +141,7 @@ int main() {
     delete[] registerMessage;
     delete[] userMessages;
     delete[] client.username;
-    delete[] client.serverIP;
+    //delete[] client.serverIP;
 
     WSACleanup();
 

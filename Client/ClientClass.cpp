@@ -339,7 +339,7 @@ int ClientClass::gettingServerData()
 			}
 			else if (readresult == 2)		//ECONRESET 10054
 			{
-				printf("ERROR: SERVER closed the connection. The Server is likely full if this happens immedietely on connect!");
+				printf("ERROR: SERVER closed the connection.");
 				FD_CLR(clientSocket, &readSet);
 				shutdown(clientSocket, 2);			//removing and cleaning up a socket
 				closesocket(clientSocket);
