@@ -28,23 +28,35 @@ int main() {
     ClientClass client;
 
 
-    std::cout << "Enter the server IP address: ";
+    client.listenForUDPPackets(45612);
+    //waiting for UDP information to auto connect to server
+  
+
+
+
+   /* std::cout << "Enter the server IP address: ";
     std::cin >> client.serverIP;
 
     std::cin.ignore(1000, '\n');
 
 
     std::cout << "Enter the server port: ";
-    std::cin >> client.serverPort;
+    std::cin >> client.serverPort;*/
 
-    std::cin.ignore(1000, '\n');
+   /* std::cin.ignore(1000, '\n');*/
 
     std::cout << "Please enter your username: ";
     std::cin.getline(client.username, 50) ;   
 
     system("cls");
     
-    char command[] = "$register ";
+    char registerCommand[] = "$register ";
+    std::string exitCommand = "$exit";
+    std::string getListCommand = "$getlist";
+    std::string getLogCommand = "$getlog";
+
+    
+
 
     int errorCheck = client.init(client.serverPort, client.serverIP);
 
@@ -61,11 +73,11 @@ int main() {
     std::thread listenForServerMessages([&]() {client.gettingServerData(); });
    
 
-    int combinedLength = strlen(command) + strlen(client.username) + 1; //+1 for null terminator
+    int combinedLength = strlen(registerCommand) + strlen(client.username) + 1; //+1 for null terminator
 
     char* registerMessage = new char[combinedLength];
 
-    strcpy(registerMessage, command);
+    strcpy(registerMessage, registerCommand);
     strcat(registerMessage, client.username);
 
     
@@ -80,7 +92,7 @@ int main() {
     FD_ZERO(&readSet); // Add stdin (user input) to the set
     FD_SET(client.clientSocket, &readSet); // Add server socket to the set
 
-   
+  
 
    //using multiplexing in another thread to recieve server messages so user input doesn't interfere with recieving server messages
 
@@ -91,15 +103,39 @@ int main() {
         userMessages[0] = '\0';
 
         std::cin.getline(userMessages, 255);
-        std::cout << client.username << ": " << userMessages;           
+        std::cout << client.username << ": " << userMessages;     
 
-        client.sendMessage(userMessages, strlen(userMessages) + 1);
+
+        std::string exit = userMessages;
+
+        if (exit.find(exitCommand) != std::string::npos)
+        {
+            std::cout << "Closing socket connection to server\n";
+            closesocket(client.clientSocket);            
+            client.runClient = false;
+           
+            break;
+        }
+        else if (exit.find(getLogCommand) != std::string::npos)
+        {
+
+            client.sendMessage(userMessages, strlen(userMessages) + 1);
+            std::cout << '\n';
+
+        }        
+        else
+        {
+            client.sendMessage(userMessages, strlen(userMessages) + 1);
+            std::cout << '\n';
+
+        }
 
     }
 
     //cleaning up memory 
 
     listenForServerMessages.join();
+
 
     client.runClient = false;
     delete[] registerMessage;

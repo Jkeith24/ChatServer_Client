@@ -56,6 +56,75 @@ int ClientClass::init(uint16_t port, const char* address)
 	return SUCCESS;
 }
 
+int ClientClass::listenForUDPPackets(int port) {
+	
+	SOCKET UDPSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+
+	if (UDPSocket == INVALID_SOCKET)
+	{
+		WSACleanup();		
+		printf("Invalid UDP Socket");//releases memory associated with failed socket
+		return SETUP_ERROR;
+	}
+
+	sockaddr_in server_address;
+	server_address.sin_family = AF_INET;
+	server_address.sin_addr.s_addr = INADDR_ANY;
+	server_address.sin_port = htons(port);  // Choose a port number
+
+
+	if (bind(UDPSocket, (SOCKADDR*)&server_address, sizeof(server_address)) == SOCKET_ERROR) {
+		printf("Error binding socket");
+		closesocket(UDPSocket);
+		WSACleanup();
+		return BIND_ERROR;
+	}
+
+	printf("UDP: Listening on port 45612");
+
+	char buffer[1024];
+	sockaddr_in client_address;
+	int client_address_len = sizeof(client_address);
+
+	while (true) {
+		printf("\nWaiting for UDP info...\n");
+		int bytes_received = recvfrom(UDPSocket, buffer, sizeof(buffer), 0, (SOCKADDR*)&client_address, &client_address_len);
+
+		if (bytes_received == SOCKET_ERROR) {
+			std::cerr << "Error receiving data" << std::endl;
+			continue;
+		}
+
+		std::string received_data(buffer, bytes_received);
+		std::string::size_type percent_pos = received_data.find('%');
+
+		if (percent_pos != std::string::npos) {
+			std::string ip_address = received_data.substr(0, percent_pos);
+			std::string port_str = received_data.substr(percent_pos + 1);
+			int port = std::stoi(port_str);
+
+			std::cout << "Received TCP Ip address >> " << ip_address << " and port >> " << port << std::endl;
+			strcpy(serverIP, ip_address.c_str());
+			serverPort = port;
+			
+		}
+		else {
+			std::cerr << "Invalid format: " << received_data << std::endl;
+		}
+
+		
+
+		closesocket(UDPSocket);
+		
+
+
+		break;
+	}
+
+
+}
+
 int ClientClass::readMessage(SOCKET _socket, char* buffer, int32_t size)
 {
 	int error;
